@@ -26,3 +26,8 @@ export function getFeedbackTypeLabel(type: string): string {
 export function getFeedbackStatusLabel(status: string): string {
   return FEEDBACK_STATUS.find((s) => s.value === status)?.label ?? status;
 }
+
+/** 获取项目状态中文标签 */
+export function getProjectStatusLabel(status: string): string {
+  return PROJECT_STATUS.find((s) => s.value === status)?.label ?? status;
+}

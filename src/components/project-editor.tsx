@@ -19,8 +19,9 @@ import type { GithubImportData } from "@/lib/github";
 import { ProjectGithubImport } from "@/components/project-github-import";
 import { ProjectDeleteSection } from "@/components/project-delete-section";
 import { ProjectMediaManager, type ProjectMedia } from "@/components/project-media-manager";
-
-const DEFAULT_CATEGORIES = ["工具", "开源项目", "TypeScript", "JavaScript", "Python", "其他"];
+import { CategoryInput } from "@/components/category-input";
+import { DEFAULT_CATEGORIES } from "@/lib/categories";
+import { PROJECT_STATUS, getProjectStatusLabel } from "@/lib/constants";
 
 type Project = {
   id: string;
@@ -98,13 +99,17 @@ export function ProjectEditor({ project, categories = DEFAULT_CATEGORIES }: Prop
       toast.error("标题至少 2 个字符");
       return;
     }
+    if (!category.trim()) {
+      toast.error("请填写分类");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
         title: title.trim(),
         description: description.trim(),
         content,
-        category,
+        category: category.trim(),
         coverUrl: coverUrl || null,
         githubUrl: githubUrl.trim() || null,
         status,
@@ -179,18 +184,7 @@ export function ProjectEditor({ project, categories = DEFAULT_CATEGORIES }: Prop
           </div>
           <div>
             <Label>分类</Label>
-            <Select value={category} onValueChange={(v) => v && setCategory(v)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CategoryInput value={category} categories={categories} onChange={setCategory} />
           </div>
           <div>
             <Label htmlFor="coverUrl">封面</Label>
@@ -220,11 +214,12 @@ export function ProjectEditor({ project, categories = DEFAULT_CATEGORIES }: Prop
             <Label>状态</Label>
             <Select value={status} onValueChange={(v) => v && setStatus(v)}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue>{getProjectStatusLabel(status)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="draft">草稿</SelectItem>
-                <SelectItem value="published">已发布</SelectItem>
+                {PROJECT_STATUS.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

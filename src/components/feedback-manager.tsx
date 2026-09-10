@@ -112,7 +112,9 @@ export function FeedbackManager({ items }: { items: Feedback[] }) {
               <TableCell>{new Date(item.createdAt).toLocaleDateString("zh-CN")}</TableCell>
               <TableCell>
                 <Select value={item.status} onValueChange={(v) => v && updateStatus(item.id, v)}>
-                  <SelectTrigger className="w-28 h-8"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-28 h-8">
+                    <SelectValue>{getFeedbackStatusLabel(item.status)}</SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     {FEEDBACK_STATUS.map((s) => (
                       <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>

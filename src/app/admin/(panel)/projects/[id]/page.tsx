@@ -2,6 +2,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ProjectEditor } from "@/components/project-editor";
+import { getProjectCategories } from "@/lib/categories";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -18,11 +19,12 @@ export default async function EditProjectPage({ params }: Props) {
     },
   });
   if (!project) notFound();
+  const categories = await getProjectCategories();
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">编辑项目：{project.title}</h1>
-      <ProjectEditor project={project} />
+      <ProjectEditor project={project} categories={categories} />
     </div>
   );
 }
