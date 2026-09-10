@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import slugify from "slugify";
 import { z } from "zod";
 import { verifyAdminPassword } from "@/lib/admin-auth";
+import { revalidateProjectPages } from "@/lib/revalidate-project";
 
 const projectSchema = z.object({
   title: z.string().min(2).max(200),
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
       publishedAt: data.status === "published" ? new Date() : null,
     },
   });
+  revalidateProjectPages(project.slug);
   return NextResponse.json(project);
 }
 
@@ -74,6 +76,8 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "参数无效" }, { status: 400 });
   }
   const data = parsed.data;
+  const existing = await prisma.project.findUnique({ where: { id } });
+  if (!existing) return NextResponse.json({ error: "项目不存在" }, { status: 404 });
   const project = await prisma.project.update({
     where: { id },
     data: {
@@ -82,6 +86,8 @@ export async function PATCH(request: NextRequest) {
         data.status === "published" ? new Date() : data.status === "draft" ? null : undefined,
     },
   });
+  revalidateProjectPages(project.slug);
+  if (existing.slug !== project.slug) revalidateProjectPages(existing.slug);
   return NextResponse.json(project);
 }
 
@@ -96,6 +102,9 @@ export async function DELETE(request: NextRequest) {
   if (!verifyAdminPassword(parsed.data.password)) {
     return NextResponse.json({ error: "密码错误" }, { status: 403 });
   }
+  const existing = await prisma.project.findUnique({ where: { id: parsed.data.id } });
+  if (!existing) return NextResponse.json({ error: "项目不存在" }, { status: 404 });
   await prisma.project.delete({ where: { id: parsed.data.id } });
+  revalidateProjectPages(existing.slug);
   return NextResponse.json({ ok: true });
 }

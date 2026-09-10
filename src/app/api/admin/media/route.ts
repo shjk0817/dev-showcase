@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { revalidateProjectPages } from "@/lib/revalidate-project";
 
 const mediaSchema = z.object({
   projectId: z.string(),
@@ -65,6 +66,11 @@ export async function POST(request: NextRequest) {
       });
       break;
   }
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { slug: true },
+  });
+  if (project) revalidateProjectPages(project.slug);
   return NextResponse.json(result);
 }
 
@@ -73,10 +79,22 @@ export async function DELETE(request: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "未授权" }, { status: 401 });
   const { kind, id } = await request.json();
+  const slugSelect = { project: { select: { slug: true } } };
+  const media =
+    kind === "screenshot"
+      ? await prisma.screenshot.findUnique({ where: { id }, select: slugSelect })
+      : kind === "download"
+        ? await prisma.download.findUnique({ where: { id }, select: slugSelect })
+        : kind === "tutorial"
+          ? await prisma.tutorial.findUnique({ where: { id }, select: slugSelect })
+          : kind === "video"
+            ? await prisma.video.findUnique({ where: { id }, select: slugSelect })
+            : null;
+  if (!media) return NextResponse.json({ error: "类型无效或资源不存在" }, { status: 400 });
   if (kind === "screenshot") await prisma.screenshot.delete({ where: { id } });
   else if (kind === "download") await prisma.download.delete({ where: { id } });
   else if (kind === "tutorial") await prisma.tutorial.delete({ where: { id } });
-  else if (kind === "video") await prisma.video.delete({ where: { id } });
-  else return NextResponse.json({ error: "类型无效" }, { status: 400 });
+  else await prisma.video.delete({ where: { id } });
+  if (media.project) revalidateProjectPages(media.project.slug);
   return NextResponse.json({ ok: true });
 }

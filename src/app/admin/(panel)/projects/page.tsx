@@ -13,6 +13,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+export const dynamic = "force-dynamic";
+
 /** 项目列表管理页 */
 export default async function AdminProjectsPage() {
   const projects = await prisma.project.findMany({ orderBy: { updatedAt: "desc" } });

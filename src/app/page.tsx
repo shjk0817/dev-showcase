@@ -2,6 +2,8 @@
 import { prisma } from "@/lib/db";
 import { ProjectCard } from "@/components/project-card";
 
+export const dynamic = "force-dynamic";
+
 /** 首页项目列表 */
 export default async function HomePage() {
   const projects = await prisma.project.findMany({
