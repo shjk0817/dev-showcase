@@ -1,4 +1,4 @@
-// 反馈提交表单（客户端）
+// 反馈提交表单（客户端，绑定到具体项目）
 "use client";
 
 import { useState } from "react";
@@ -16,14 +16,19 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FEEDBACK_TYPES } from "@/lib/constants";
 
-/** 匿名反馈表单 */
-export function FeedbackForm() {
+type Props = {
+  projectId: string;
+  projectTitle: string;
+};
+
+/** 针对单个项目的匿名反馈表单 */
+export function FeedbackForm({ projectId, projectTitle }: Props) {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [type, setType] = useState("");
 
-  /** 提交反馈到 API */
+  /** 提交项目反馈到 API */
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!type) {
@@ -33,7 +38,7 @@ export function FeedbackForm() {
     setLoading(true);
     setError("");
     const form = new FormData(e.currentTarget);
-    const body = { ...Object.fromEntries(form.entries()), type };
+    const body = { ...Object.fromEntries(form.entries()), type, projectId };
     try {
       const res = await fetch("/api/feedback", {
         method: "POST",
@@ -56,7 +61,7 @@ export function FeedbackForm() {
     return (
       <Alert>
         <AlertDescription>
-          反馈已提交，感谢你的意见！我们会尽快处理。
+          你对「{projectTitle}」的反馈已提交，感谢你的意见！
           <Button variant="link" className="px-1" onClick={() => setDone(false)}>
             继续提交
           </Button>
@@ -67,6 +72,9 @@ export function FeedbackForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
+      <p className="text-sm text-muted-foreground">
+        针对项目「{projectTitle}」提交 Issue、建议或使用反馈
+      </p>
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>

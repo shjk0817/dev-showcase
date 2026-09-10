@@ -32,6 +32,8 @@ type Feedback = {
   status: string;
   adminNote?: string | null;
   createdAt: string;
+  projectTitle?: string;
+  projectSlug?: string;
 };
 
 /** 反馈管理表格 */
@@ -76,6 +78,7 @@ export function FeedbackManager({ items }: { items: Feedback[] }) {
       <TableHeader>
         <TableRow>
           <TableHead>标题</TableHead>
+          <TableHead>所属项目</TableHead>
           <TableHead>类型</TableHead>
           <TableHead>状态</TableHead>
           <TableHead>时间</TableHead>
@@ -91,6 +94,7 @@ export function FeedbackManager({ items }: { items: Feedback[] }) {
                   {item.title}
                 </button>
               </TableCell>
+              <TableCell className="text-sm">{item.projectTitle ?? "-"}</TableCell>
               <TableCell>{getFeedbackTypeLabel(item.type)}</TableCell>
               <TableCell>
                 <Badge variant="outline">{getFeedbackStatusLabel(item.status)}</Badge>
@@ -109,7 +113,7 @@ export function FeedbackManager({ items }: { items: Feedback[] }) {
             </TableRow>
             {expanded === item.id && (
               <TableRow>
-                <TableCell colSpan={5} className="bg-slate-50">
+                <TableCell colSpan={6} className="bg-slate-50">
                   <p className="text-sm mb-2 whitespace-pre-wrap">{item.content}</p>
                   {item.contact && <p className="text-xs text-muted-foreground mb-2">联系方式：{item.contact}</p>}
                   <Textarea

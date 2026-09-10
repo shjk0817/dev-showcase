@@ -17,11 +17,7 @@ export default async function HomePage() {
         <section className="mb-8">
           <h1 className="text-3xl font-bold mb-2">JKTAC 开发成果</h1>
           <p className="text-muted-foreground">
-            欢迎浏览 JKTAC 的开发成果。如有问题或建议，欢迎
-            <a href="/feedback" className="text-blue-600 hover:underline mx-1">
-              提交反馈
-            </a>
-            。
+            欢迎浏览 JKTAC 的开发成果。进入项目详情页可提交 Issue、建议与反馈。
           </p>
         </section>
         {projects.length === 0 ? (
@@ -35,7 +31,7 @@ export default async function HomePage() {
         )}
       </main>
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-        JKTAC · 欢迎提出 Issue 与反馈
+        JKTAC · 每个项目均可独立提交反馈
       </footer>
     </>
   );

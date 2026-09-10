@@ -35,8 +35,41 @@ async function main() {
       tutorials: {
         create: [
           {
-            title: "快速上手",
-            content: "### 第一步\n\n下载并安装客户端。\n\n### 第二步\n\n登录后选择数据源，点击「生成报表」。",
+            title: "使用教程",
+            content: `# 智能报表工具 · 使用教程
+
+> 本文档采用 Markdown 编写，渲染效果类似 GitHub README。
+
+## 快速开始
+
+1. 下载并安装客户端
+2. 使用工号登录
+3. 选择数据源，点击 **生成报表**
+
+## 功能说明
+
+| 功能 | 说明 | 快捷键 |
+|------|------|--------|
+| 新建报表 | 从模板创建 | \`Ctrl+N\` |
+| 导出 Excel | 导出为 .xlsx | \`Ctrl+E\` |
+| 定时推送 | 设置邮件定时发送 | - |
+
+## 代码示例
+
+\`\`\`javascript
+// 通过 API 触发报表生成
+const res = await fetch('/api/report/generate', {
+  method: 'POST',
+  body: JSON.stringify({ templateId: 'monthly' }),
+});
+\`\`\`
+
+## 常见问题
+
+- **登录失败**：检查 VPN 是否连接
+- **导出超时**：数据量过大时请缩小日期范围
+
+> 如有其他问题，请在项目详情页的 **反馈** Tab 提交 Issue。`,
             sortOrder: 0,
           },
         ],
@@ -51,6 +84,7 @@ async function main() {
 
   await prisma.feedback.create({
     data: {
+      projectId: project.id,
       title: "希望增加 PDF 导出",
       content: "目前只支持 Excel，能否增加 PDF 导出功能？",
       type: "suggestion",

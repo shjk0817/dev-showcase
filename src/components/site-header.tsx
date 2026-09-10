@@ -1,7 +1,5 @@
 // 站点顶部导航栏
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 /** 渲染公开页面导航 */
 export function SiteHeader() {
@@ -12,11 +10,8 @@ export function SiteHeader() {
           JKTAC
         </Link>
         <nav className="flex items-center gap-2">
-          <Link href="/" className={cn(buttonVariants({ variant: "ghost" }))}>
+          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
             首页
-          </Link>
-          <Link href="/feedback" className={cn(buttonVariants({ variant: "ghost" }))}>
-            提交反馈
           </Link>
         </nav>
       </div>
