@@ -2,6 +2,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FEEDBACK_TYPES } from "@/lib/constants";
+import { FEEDBACK_TYPES, getFeedbackTypeLabel } from "@/lib/constants";
 import { X } from "lucide-react";
 
 type Props = {
@@ -26,6 +27,7 @@ const ACCEPT =
 
 /** 针对单个项目的匿名反馈表单 */
 export function FeedbackForm({ projectId }: Props) {
+  const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -66,6 +68,7 @@ export function FeedbackForm({ projectId }: Props) {
       setType("");
       setFiles([]);
       e.currentTarget.reset();
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "提交失败");
     } finally {
@@ -97,12 +100,14 @@ export function FeedbackForm({ projectId }: Props) {
       <div className="space-y-2">
         <Label>反馈类型</Label>
         <Select value={type} onValueChange={(v) => setType(v ?? "")}>
-          <SelectTrigger>
-            <SelectValue placeholder="请选择类型" />
+          <SelectTrigger className="w-full cursor-pointer">
+            <SelectValue placeholder="请选择类型">
+              {type ? getFeedbackTypeLabel(type) : null}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {FEEDBACK_TYPES.map((t) => (
-              <SelectItem key={t.value} value={t.value}>
+              <SelectItem key={t.value} value={t.value} className="cursor-pointer">
                 {t.label}
               </SelectItem>
             ))}
@@ -130,6 +135,7 @@ export function FeedbackForm({ projectId }: Props) {
           accept={ACCEPT}
           onChange={handleFileChange}
           disabled={files.length >= 5}
+          className="cursor-pointer"
         />
         <p className="text-xs text-muted-foreground">
           支持图片、PDF、Word、Excel、PPT、TXT、ZIP 等，单个不超过 20MB
@@ -139,7 +145,7 @@ export function FeedbackForm({ projectId }: Props) {
             {files.map((file, i) => (
               <li key={`${file.name}-${i}`} className="flex items-center justify-between text-sm border rounded px-2 py-1">
                 <span className="truncate">{file.name}</span>
-                <button type="button" onClick={() => removeFile(i)} aria-label="移除">
+                <button type="button" className="cursor-pointer" onClick={() => removeFile(i)} aria-label="移除">
                   <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                 </button>
               </li>
@@ -147,7 +153,7 @@ export function FeedbackForm({ projectId }: Props) {
           </ul>
         )}
       </div>
-      <Button type="submit" disabled={loading}>
+      <Button type="submit" disabled={loading} className="cursor-pointer">
         {loading ? "提交中..." : "提交反馈"}
       </Button>
     </form>

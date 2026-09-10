@@ -16,22 +16,34 @@ type ProjectCardProps = {
 /** 渲染单个项目卡片 */
 export function ProjectCard({ title, slug, description, category, coverUrl }: ProjectCardProps) {
   return (
-    <Link href={`/projects/${slug}`}>
-      <Card className={`h-full gap-0 py-0 ${materialCardHover}`}>
-        <div className="aspect-video bg-slate-100 relative">
+    <Link href={`/projects/${slug}`} className="group block cursor-pointer">
+      <Card
+        className={`h-full gap-0 py-0 ${materialCardHover} transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-2xl`}
+      >
+        <div className="aspect-video bg-slate-100 relative overflow-hidden">
           {coverUrl ? (
-            <Image src={coverUrl} alt={title} fill className="object-cover" priority={false} />
+            <Image
+              src={coverUrl}
+              alt={title}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              priority={false}
+            />
           ) : (
             <div className="flex items-center justify-center h-full text-slate-400">暂无封面</div>
           )}
         </div>
         <CardHeader className="pb-2 pt-4">
           <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-lg line-clamp-1">{title}</CardTitle>
-            <Badge variant="secondary">{category}</Badge>
+            <CardTitle className="text-lg line-clamp-1 transition-colors group-hover:text-blue-600">
+              {title}
+            </CardTitle>
+            <Badge variant="secondary" className="cursor-pointer">
+              {category}
+            </Badge>
           </div>
         </CardHeader>
-        <CardContent className="pb-4">
+        <CardContent className="pb-4 cursor-pointer">
           <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
         </CardContent>
       </Card>

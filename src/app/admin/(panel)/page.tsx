@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { getFeedbackTypeLabel } from "@/lib/constants";
+import { getFeedbackTypeLabel, getFeedbackStatusLabel } from "@/lib/constants";
+
+export const dynamic = "force-dynamic";
 
 /** 后台首页仪表盘 */
 export default async function AdminDashboard() {
@@ -47,7 +49,7 @@ export default async function AdminDashboard() {
               <p className="font-medium">{f.title}</p>
               <p className="text-sm text-muted-foreground">{getFeedbackTypeLabel(f.type)}</p>
             </div>
-            <Badge variant="outline">{f.status}</Badge>
+            <Badge variant="outline">{getFeedbackStatusLabel(f.status)}</Badge>
           </div>
         ))}
         {recentFeedback.length === 0 && (

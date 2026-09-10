@@ -2,6 +2,8 @@
 import { prisma } from "@/lib/db";
 import { FeedbackManager } from "@/components/feedback-manager";
 
+export const dynamic = "force-dynamic";
+
 /** 反馈管理页 */
 export default async function AdminFeedbackPage() {
   const items = await prisma.feedback.findMany({

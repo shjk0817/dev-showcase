@@ -1,4 +1,5 @@
 // 公开反馈提交接口（支持多附件上传）
+import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -69,5 +70,8 @@ export async function POST(request: NextRequest) {
       },
     },
   });
+  revalidatePath("/admin");
+  revalidatePath("/admin/feedback");
+  revalidatePath(`/projects/${project.slug}`);
   return NextResponse.json({ id: feedback.id, message: "反馈已提交，感谢你的意见！" });
 }

@@ -7,7 +7,7 @@ import { ProjectGallery } from "@/components/project-gallery";
 import { DownloadList } from "@/components/download-list";
 import { MarkdownContent } from "@/components/markdown-content";
 import { VideoList } from "@/components/video-list";
-import { FeedbackForm } from "@/components/feedback-form";
+import { ProjectFeedbackSection } from "@/components/project-feedback-section";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { materialCard, materialPanel } from "@/lib/material";
@@ -29,6 +29,26 @@ export default async function ProjectPage({ params }: Props) {
     },
   });
   if (!project) notFound();
+
+  const feedbacks = await prisma.feedback.findMany({
+    where: { projectId: project.id },
+    include: { attachments: true },
+    orderBy: { createdAt: "desc" },
+  });
+  const feedbackItems = feedbacks.map((f) => ({
+    id: f.id,
+    title: f.title,
+    content: f.content,
+    type: f.type,
+    status: f.status,
+    createdAt: f.createdAt.toISOString(),
+    attachments: f.attachments.map((a) => ({
+      id: a.id,
+      name: a.name,
+      fileUrl: a.fileUrl,
+      mimeType: a.mimeType,
+    })),
+  }));
 
   return (
     <main className="min-h-screen bg-muted/30 px-4 py-6 md:py-10">
@@ -94,9 +114,7 @@ export default async function ProjectPage({ params }: Props) {
                 </div>
               </TabsContent>
               <TabsContent value="feedback" className="mt-6">
-                <div className={materialPanel}>
-                  <FeedbackForm projectId={project.id} />
-                </div>
+                <ProjectFeedbackSection projectId={project.id} feedbacks={feedbackItems} />
               </TabsContent>
             </Tabs>
           </div>
