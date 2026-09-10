@@ -1,0 +1,18 @@
+// 管理端反馈列表页
+import { prisma } from "@/lib/db";
+import { FeedbackManager } from "@/components/feedback-manager";
+
+/** 反馈管理页 */
+export default async function AdminFeedbackPage() {
+  const items = await prisma.feedback.findMany({ orderBy: { createdAt: "desc" } });
+  const serialized = items.map((i) => ({
+    ...i,
+    createdAt: i.createdAt.toISOString(),
+  }));
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-6">反馈管理</h1>
+      <FeedbackManager items={serialized} />
+    </div>
+  );
+}
