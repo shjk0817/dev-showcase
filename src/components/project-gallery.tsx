@@ -21,7 +21,7 @@ export function ProjectGallery({ shots }: { shots: Shot[] }) {
           <button
             key={shot.id}
             type="button"
-            className="relative aspect-video rounded-lg overflow-hidden border hover:opacity-90"
+            className="relative aspect-video rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow"
             onClick={() => setActive(shot.url)}
           >
             <Image src={shot.url} alt={shot.caption ?? "截图"} fill className="object-cover" />

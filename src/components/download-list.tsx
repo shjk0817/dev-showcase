@@ -19,7 +19,7 @@ export function DownloadList({ items }: { items: Item[] }) {
   return (
     <div className="space-y-3">
       {items.map((item) => (
-        <div key={item.id} className="flex items-center justify-between border rounded-lg p-4">
+        <div key={item.id} className="flex items-center justify-between rounded-xl bg-card shadow-md p-4">
           <div>
             <p className="font-medium">{item.name}</p>
             <p className="text-sm text-muted-foreground">
