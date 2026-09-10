@@ -37,6 +37,16 @@ export default async function AdminProjectsPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
+          {projects.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                暂无项目，
+                <Link href="/admin/projects/new" className="text-primary hover:underline ml-1">
+                  点击新建
+                </Link>
+              </TableCell>
+            </TableRow>
+          )}
           {projects.map((p) => (
             <TableRow key={p.id}>
               <TableCell>{p.title}</TableCell>

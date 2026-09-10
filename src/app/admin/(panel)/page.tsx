@@ -44,13 +44,17 @@ export default async function AdminDashboard() {
       <h2 className="text-lg font-semibold mb-3">最近反馈</h2>
       <div className="space-y-2">
         {recentFeedback.map((f) => (
-          <div key={f.id} className="border rounded-lg p-3 flex justify-between items-center">
+          <Link
+            key={f.id}
+            href="/admin/feedback"
+            className="border rounded-lg p-3 flex justify-between items-center hover:bg-slate-50 transition-colors"
+          >
             <div>
               <p className="font-medium">{f.title}</p>
               <p className="text-sm text-muted-foreground">{getFeedbackTypeLabel(f.type)}</p>
             </div>
             <Badge variant="outline">{getFeedbackStatusLabel(f.status)}</Badge>
-          </div>
+          </Link>
         ))}
         {recentFeedback.length === 0 && (
           <p className="text-muted-foreground">暂无反馈</p>

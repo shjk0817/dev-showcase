@@ -1,11 +1,13 @@
 // PM2 生产进程配置
+const path = require("path");
+
 module.exports = {
   apps: [
     {
       name: "dev-showcase",
       script: "node_modules/next/dist/bin/next",
       args: "start -p 3000",
-      cwd: "/root/dev-showcase",
+      cwd: path.resolve(__dirname),
       env: {
         NODE_ENV: "production",
       },

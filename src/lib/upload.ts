@@ -6,6 +6,8 @@ import { randomUUID } from "crypto";
 const UPLOAD_DIR = path.join(process.cwd(), "public/uploads");
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const IMAGE_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif"]);
+
 const ADMIN_FILE_TYPES = [
   ...IMAGE_TYPES,
   "application/zip",
@@ -14,6 +16,18 @@ const ADMIN_FILE_TYPES = [
   "video/mp4",
   "video/webm",
 ];
+
+const ADMIN_FILE_EXT = new Set([
+  ...IMAGE_EXT,
+  ".zip",
+  ".exe",
+  ".msi",
+  ".dmg",
+  ".deb",
+  ".rpm",
+  ".mp4",
+  ".webm",
+]);
 
 const FEEDBACK_MIME_TYPES = [
   ...IMAGE_TYPES,
@@ -43,9 +57,10 @@ export async function saveUpload(
   file: File,
   subdir: string,
   maxSize: number,
-  allowedTypes = ADMIN_FILE_TYPES
+  allowedTypes = ADMIN_FILE_TYPES,
+  allowedExt = ADMIN_FILE_EXT
 ): Promise<{ url: string; size: number; mimeType: string }> {
-  if (!isAllowedFile(file, allowedTypes)) {
+  if (!isAllowedFile(file, allowedTypes, allowedExt)) {
     throw new Error(`不支持的文件类型：${file.name}`);
   }
   if (file.size > maxSize) {
@@ -66,17 +81,24 @@ export async function saveUpload(
 
 /** 保存反馈附件 */
 export async function saveFeedbackFile(file: File) {
-  return saveUpload(file, "feedback", 20 * 1024 * 1024, FEEDBACK_MIME_TYPES);
+  return saveUpload(file, "feedback", 20 * 1024 * 1024, FEEDBACK_MIME_TYPES, FEEDBACK_EXT);
 }
 
-/** 判断是否为图片类型 */
+/** 判断是否为图片类型（含扩展名回退） */
+export function isImageFile(file: File): boolean {
+  if (IMAGE_TYPES.includes(file.type)) return true;
+  const ext = path.extname(file.name).toLowerCase();
+  return IMAGE_EXT.has(ext);
+}
+
+/** 判断是否为图片 MIME */
 export function isImageType(type: string): boolean {
   return IMAGE_TYPES.includes(type);
 }
 
 /** 校验文件类型是否允许上传 */
-function isAllowedFile(file: File, allowedTypes: string[]): boolean {
-  if (allowedTypes.includes(file.type)) return true;
+function isAllowedFile(file: File, allowedTypes: string[], allowedExt: Set<string>): boolean {
+  if (file.type && allowedTypes.includes(file.type)) return true;
   const ext = path.extname(file.name).toLowerCase();
-  return FEEDBACK_EXT.has(ext);
+  return allowedExt.has(ext);
 }

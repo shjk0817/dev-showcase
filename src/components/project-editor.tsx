@@ -66,8 +66,9 @@ export function ProjectEditor({ project, categories = DEFAULT_CATEGORIES }: Prop
 
   /** 保存导入的下载与教程 */
   async function syncPendingMedia(projectId: string) {
+    if (!pendingMedia.downloads.length && !pendingMedia.tutorials.length) return;
     for (const d of pendingMedia.downloads) {
-      await fetch("/api/admin/media", {
+      const res = await fetch("/api/admin/media", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -76,9 +77,13 @@ export function ProjectEditor({ project, categories = DEFAULT_CATEGORIES }: Prop
           data: { name: d.name, fileUrl: d.fileUrl, version: d.version, fileSize: d.fileSize },
         }),
       });
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || "导入下载失败");
+      }
     }
     for (const t of pendingMedia.tutorials) {
-      await fetch("/api/admin/media", {
+      const res = await fetch("/api/admin/media", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -87,10 +92,12 @@ export function ProjectEditor({ project, categories = DEFAULT_CATEGORIES }: Prop
           data: { title: t.title, content: t.content },
         }),
       });
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || "导入教程失败");
+      }
     }
-    if (pendingMedia.downloads.length || pendingMedia.tutorials.length) {
-      setPendingMedia({ downloads: [], tutorials: [] });
-    }
+    setPendingMedia({ downloads: [], tutorials: [] });
   }
 
   /** 提交项目保存 */
@@ -185,6 +192,15 @@ export function ProjectEditor({ project, categories = DEFAULT_CATEGORIES }: Prop
           <div>
             <Label>分类</Label>
             <CategoryInput value={category} categories={categories} onChange={setCategory} />
+          </div>
+          <div>
+            <Label htmlFor="githubUrl">GitHub 链接</Label>
+            <Input
+              id="githubUrl"
+              placeholder="https://github.com/owner/repo"
+              value={githubUrl}
+              onChange={(e) => setGithubUrl(e.target.value)}
+            />
           </div>
           <div>
             <Label htmlFor="coverUrl">封面</Label>

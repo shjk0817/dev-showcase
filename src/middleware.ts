@@ -5,6 +5,11 @@ import { NextResponse } from "next/server";
 export default auth((req) => {
   const path = req.nextUrl.pathname;
   const isLogin = path === "/admin/login";
+
+  if (isLogin && req.auth) {
+    return NextResponse.redirect(new URL("/admin", req.nextUrl));
+  }
+
   const needAuth =
     (path.startsWith("/admin") && !isLogin) || path.startsWith("/api/admin");
   if (needAuth && !req.auth) {

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { FEEDBACK_STATUS, getFeedbackTypeLabel, getFeedbackStatusLabel } from "@/lib/constants";
 import { isImageAttachment } from "@/lib/file-utils";
+import { toast } from "sonner";
 
 type Attachment = {
   id: string;
@@ -54,32 +55,50 @@ export function FeedbackManager({ items }: { items: Feedback[] }) {
 
   /** 更新反馈状态 */
   async function updateStatus(id: string, status: string) {
-    await fetch("/api/admin/feedback", {
+    const res = await fetch("/api/admin/feedback", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status }),
     });
+    if (!res.ok) {
+      const body = await res.json();
+      toast.error(body.error || "更新失败");
+      return;
+    }
+    toast.success("状态已更新");
     router.refresh();
   }
 
   /** 保存内部备注 */
   async function saveNote(id: string) {
-    await fetch("/api/admin/feedback", {
+    const res = await fetch("/api/admin/feedback", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, adminNote: notes[id] ?? "" }),
     });
+    if (!res.ok) {
+      const body = await res.json();
+      toast.error(body.error || "保存失败");
+      return;
+    }
+    toast.success("备注已保存");
     router.refresh();
   }
 
   /** 删除反馈 */
   async function remove(id: string) {
     if (!confirm("确定删除此反馈？")) return;
-    await fetch("/api/admin/feedback", {
+    const res = await fetch("/api/admin/feedback", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
+    if (!res.ok) {
+      const body = await res.json();
+      toast.error(body.error || "删除失败");
+      return;
+    }
+    toast.success("已删除");
     router.refresh();
   }
 

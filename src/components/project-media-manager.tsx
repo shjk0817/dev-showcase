@@ -239,9 +239,13 @@ function VideoSection({
       toast.error("请先填写视频标题");
       return;
     }
-    const videoUrl = await onUpload(file);
-    await onAdd({ title: title.trim(), url: videoUrl, type: "upload" });
-    setTitle("");
+    try {
+      const videoUrl = await onUpload(file);
+      await onAdd({ title: title.trim(), url: videoUrl, type: "upload" });
+      setTitle("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "视频上传失败");
+    }
   }
 
   return (

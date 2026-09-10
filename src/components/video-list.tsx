@@ -4,7 +4,7 @@ type VideoItem = { id: string; title: string; url: string; type: string };
 /** 判断是否为 B 站或 YouTube 嵌入链接 */
 function getEmbedUrl(url: string): string | null {
   const bili = url.match(/bilibili\.com\/video\/(BV[\w]+)/);
-  if (bili) return `//player.bilibili.com/player.html?bvid=${bili[1]}&high_quality=1`;
+  if (bili) return `https://player.bilibili.com/player.html?bvid=${bili[1]}&high_quality=1`;
   const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
   if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
   return null;

@@ -2,15 +2,16 @@
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { saveFeedbackFile } from "@/lib/upload";
+import { deleteUploads } from "@/lib/file-cleanup";
 
 const MAX_FILES = 5;
 
 /** 接收针对项目的匿名反馈（multipart） */
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  if (!checkRateLimit(ip)) {
+  const ip = getClientIp(request.headers);
+  if (!checkRateLimit(`feedback:${ip}`)) {
     return NextResponse.json({ error: "提交过于频繁，请稍后再试" }, { status: 429 });
   }
   const form = await request.formData();
@@ -24,8 +25,14 @@ export async function POST(request: NextRequest) {
   const contact = String(form.get("contact") ?? "").trim();
   const files = form.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
 
-  if (!projectId || title.length < 2 || content.length < 5) {
-    return NextResponse.json({ error: "请填写完整的反馈信息" }, { status: 400 });
+  if (!projectId || title.length < 2 || title.length > 200) {
+    return NextResponse.json({ error: "标题长度需在 2-200 字符" }, { status: 400 });
+  }
+  if (content.length < 5 || content.length > 5000) {
+    return NextResponse.json({ error: "内容长度需在 5-5000 字符" }, { status: 400 });
+  }
+  if (contact.length > 200) {
+    return NextResponse.json({ error: "联系方式过长" }, { status: 400 });
   }
   if (!["issue", "suggestion", "feedback"].includes(type)) {
     return NextResponse.json({ error: "反馈类型无效" }, { status: 400 });
@@ -41,37 +48,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "项目不存在或未发布" }, { status: 404 });
   }
 
-  const savedFiles = [];
-  for (const file of files) {
-    try {
+  const savedFiles: { url: string; size: number; mimeType: string }[] = [];
+  try {
+    for (const file of files) {
       savedFiles.push(await saveFeedbackFile(file));
-    } catch (err) {
-      return NextResponse.json(
-        { error: err instanceof Error ? err.message : "附件上传失败" },
-        { status: 400 }
-      );
     }
-  }
-
-  const feedback = await prisma.feedback.create({
-    data: {
-      projectId,
-      title,
-      content,
-      type,
-      contact: contact || null,
-      attachments: {
-        create: savedFiles.map((f, i) => ({
-          name: files[i].name,
-          fileUrl: f.url,
-          fileSize: f.size,
-          mimeType: f.mimeType,
-        })),
+    const feedback = await prisma.feedback.create({
+      data: {
+        projectId,
+        title,
+        content,
+        type,
+        contact: contact || null,
+        attachments: {
+          create: savedFiles.map((f, i) => ({
+            name: files[i].name,
+            fileUrl: f.url,
+            fileSize: f.size,
+            mimeType: f.mimeType,
+          })),
+        },
       },
-    },
-  });
-  revalidatePath("/admin");
-  revalidatePath("/admin/feedback");
-  revalidatePath(`/projects/${project.slug}`);
-  return NextResponse.json({ id: feedback.id, message: "反馈已提交，感谢你的意见！" });
+    });
+    revalidatePath("/admin");
+    revalidatePath("/admin/feedback");
+    revalidatePath(`/projects/${project.slug}`);
+    return NextResponse.json({ id: feedback.id, message: "反馈已提交，感谢你的意见！" });
+  } catch (err) {
+    await deleteUploads(savedFiles.map((f) => f.url));
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "提交失败" },
+      { status: 400 }
+    );
+  }
 }

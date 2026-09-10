@@ -16,6 +16,8 @@ import { ArrowLeft } from "lucide-react";
 
 type Props = { params: Promise<{ slug: string }> };
 
+export const dynamic = "force-dynamic";
+
 /** 项目详情页 */
 export default async function ProjectPage({ params }: Props) {
   const { slug } = await params;

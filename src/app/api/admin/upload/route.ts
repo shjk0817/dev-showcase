@@ -1,7 +1,7 @@
 // 管理端文件上传接口
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { saveUpload, isImageType } from "@/lib/upload";
+import { saveUpload, isImageFile } from "@/lib/upload";
 
 const LIMITS = { image: 5 * 1024 * 1024, file: 100 * 1024 * 1024, video: 200 * 1024 * 1024 };
 
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   if (!file) return NextResponse.json({ error: "未选择文件" }, { status: 400 });
   const subdir = type === "video" ? "videos" : type === "file" ? "files" : "images";
   const maxSize = type === "video" ? LIMITS.video : type === "file" ? LIMITS.file : LIMITS.image;
-  if (type === "image" && !isImageType(file.type)) {
+  if (type === "image" && !isImageFile(file)) {
     return NextResponse.json({ error: "请上传图片文件" }, { status: 400 });
   }
   try {

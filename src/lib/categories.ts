@@ -17,5 +17,14 @@ export async function getProjectCategories(): Promise<string[]> {
     distinct: ["category"],
   });
   const merged = [...DEFAULT_CATEGORIES, ...rows.map((r) => r.category)];
-  return [...new Set(merged.filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-CN"));
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const c of merged) {
+    if (!c) continue;
+    const key = c.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(c);
+  }
+  return result.sort((a, b) => a.localeCompare(b, "zh-CN"));
 }

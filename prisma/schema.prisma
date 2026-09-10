@@ -70,7 +70,7 @@ model Video {
 model Feedback {
   id          String               @id @default(cuid())
   projectId   String?
-  project     Project?             @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  project     Project?             @relation(fields: [projectId], references: [id], onDelete: Cascade)
   title       String
   content     String               @db.Text
   type        String
