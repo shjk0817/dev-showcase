@@ -13,10 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import type { GithubImportData } from "@/lib/github";
 import { ProjectGithubImport } from "@/components/project-github-import";
 import { ProjectDeleteSection } from "@/components/project-delete-section";
+import { ProjectMediaManager, type ProjectMedia } from "@/components/project-media-manager";
 
 const DEFAULT_CATEGORIES = ["工具", "开源项目", "TypeScript", "JavaScript", "Python", "其他"];
 
@@ -29,7 +31,7 @@ type Project = {
   coverUrl: string | null;
   githubUrl: string | null;
   status: string;
-};
+} & ProjectMedia;
 
 type PendingMedia = Pick<GithubImportData, "downloads" | "tutorials">;
 
@@ -125,75 +127,126 @@ export function ProjectEditor({ project, categories = DEFAULT_CATEGORIES }: Prop
     }
   }
 
+  /** 上传封面图 */
+  async function uploadCover(file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("type", "image");
+    const res = await fetch("/api/admin/upload", { method: "POST", body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "上传失败");
+    setCoverUrl(data.url);
+    toast.success("封面已上传");
+  }
+
   return (
-    <div className="space-y-6 max-w-2xl">
-      <ProjectGithubImport defaultUrl={githubUrl} onImport={applyGithubImport} />
-      {pendingMedia.downloads.length > 0 && (
-        <p className="text-sm text-muted-foreground">
-          待导入：{pendingMedia.downloads.length} 个下载、{pendingMedia.tutorials.length} 篇教程（保存后写入）
-        </p>
+    <Tabs defaultValue="basic" className="max-w-2xl">
+      <TabsList>
+        <TabsTrigger value="basic">基本信息</TabsTrigger>
+        {project && <TabsTrigger value="media">文件管理</TabsTrigger>}
+      </TabsList>
+      <TabsContent value="basic" className="mt-6 space-y-6">
+        <ProjectGithubImport defaultUrl={githubUrl} onImport={applyGithubImport} />
+        {pendingMedia.downloads.length > 0 && (
+          <p className="text-sm text-muted-foreground">
+            待导入：{pendingMedia.downloads.length} 个下载、{pendingMedia.tutorials.length} 篇教程（保存后写入）
+          </p>
+        )}
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="title">标题</Label>
+            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+          </div>
+          <div>
+            <Label htmlFor="description">简介</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="content">详细介绍（Markdown）</Label>
+            <Textarea
+              id="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={12}
+              className="font-mono text-sm"
+            />
+          </div>
+          <div>
+            <Label>分类</Label>
+            <Select value={category} onValueChange={(v) => v && setCategory(v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="coverUrl">封面</Label>
+            <Input
+              type="file"
+              accept="image/*"
+              className="mb-2"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  await uploadCover(file);
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "上传失败");
+                }
+                e.target.value = "";
+              }}
+            />
+            <Input
+              id="coverUrl"
+              placeholder="或填写封面 URL"
+              value={coverUrl}
+              onChange={(e) => setCoverUrl(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label>状态</Label>
+            <Select value={status} onValueChange={(v) => v && setStatus(v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">草稿</SelectItem>
+                <SelectItem value="published">已发布</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button type="button" onClick={handleSave} disabled={saving}>
+            {saving ? "保存中…" : "保存"}
+          </Button>
+        </div>
+        {project && <ProjectDeleteSection projectId={project.id} />}
+      </TabsContent>
+      {project && (
+        <TabsContent value="media" className="mt-6">
+          <ProjectMediaManager
+            projectId={project.id}
+            media={{
+              screenshots: project.screenshots,
+              downloads: project.downloads,
+              tutorials: project.tutorials,
+              videos: project.videos,
+            }}
+          />
+        </TabsContent>
       )}
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="title">标题</Label>
-          <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-        </div>
-        <div>
-          <Label htmlFor="description">简介</Label>
-          <Textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="content">详细介绍（Markdown）</Label>
-          <Textarea
-            id="content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={12}
-            className="font-mono text-sm"
-          />
-        </div>
-        <div>
-          <Label>分类</Label>
-          <Select value={category} onValueChange={(v) => v && setCategory(v)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="coverUrl">封面 URL</Label>
-          <Input id="coverUrl" value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} />
-        </div>
-        <div>
-          <Label>状态</Label>
-          <Select value={status} onValueChange={(v) => v && setStatus(v)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="draft">草稿</SelectItem>
-              <SelectItem value="published">已发布</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <Button type="button" onClick={handleSave} disabled={saving}>
-          {saving ? "保存中…" : "保存"}
-        </Button>
-      </div>
-      {project && <ProjectDeleteSection projectId={project.id} />}
-    </div>
+    </Tabs>
   );
 }
