@@ -11,4 +11,5 @@ public/uploads/feedback/*
 !public/uploads/feedback/.gitkeep
 !public/uploads/images/sample-*
 !public/uploads/images/jktac-*
+!public/uploads/images/cover-*
 !public/uploads/files/sample.zip

@@ -11,7 +11,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:push": "prisma db push",
     "smoke": "node scripts/smoke-test.mjs",
-    "backup": "node --env-file=.env scripts/backup.mjs"
+    "backup": "node --env-file=.env scripts/backup.mjs",
+    "import:github": "tsx --env-file=.env scripts/import-github-repos.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

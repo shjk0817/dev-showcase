@@ -1,4 +1,6 @@
 // GitHub 仓库信息解析与导入
+import { buildProjectContent, simplifyReadme } from "@/lib/readme-simplify";
+
 const GH_API = "https://api.github.com";
 
 type GithubRepo = {
@@ -87,10 +89,9 @@ export async function fetchGithubImport(url: string): Promise<GithubImportData> 
   );
 
   const desc = repoData.description || `${owner}/${repo} 开源项目`;
-  const content = readme || `## ${repoData.name}\n\n${desc}`;
-  const tutorials = readme
-    ? [{ title: "README", content: readme }]
-    : [];
+  const rawContent = readme || `## ${repoData.name}\n\n${desc}`;
+  const content = buildProjectContent(repoData.name, desc, rawContent);
+  const tutorials = readme ? [{ title: "README", content: simplifyReadme(readme) }] : [];
 
   return {
     owner,
