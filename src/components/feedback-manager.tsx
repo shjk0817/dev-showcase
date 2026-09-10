@@ -22,6 +22,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { FEEDBACK_STATUS, getFeedbackTypeLabel, getFeedbackStatusLabel } from "@/lib/constants";
+import { isImageAttachment } from "@/lib/file-utils";
+
+type Attachment = {
+  id: string;
+  name: string;
+  fileUrl: string;
+  fileSize: number;
+  mimeType: string;
+};
 
 type Feedback = {
   id: string;
@@ -34,6 +43,7 @@ type Feedback = {
   createdAt: string;
   projectTitle?: string;
   projectSlug?: string;
+  attachments?: Attachment[];
 };
 
 /** 反馈管理表格 */
@@ -116,6 +126,30 @@ export function FeedbackManager({ items }: { items: Feedback[] }) {
                 <TableCell colSpan={6} className="bg-slate-50">
                   <p className="text-sm mb-2 whitespace-pre-wrap">{item.content}</p>
                   {item.contact && <p className="text-xs text-muted-foreground mb-2">联系方式：{item.contact}</p>}
+                  {item.attachments && item.attachments.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs font-medium mb-2">附件（{item.attachments.length}）</p>
+                      <div className="flex flex-wrap gap-2">
+                        {item.attachments.map((att) =>
+                          isImageAttachment(att.mimeType, att.name) ? (
+                            <a key={att.id} href={att.fileUrl} target="_blank" rel="noopener noreferrer">
+                              <img src={att.fileUrl} alt={att.name} className="h-20 w-20 object-cover rounded border" />
+                            </a>
+                          ) : (
+                            <a
+                              key={att.id}
+                              href={att.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:underline border rounded px-2 py-1"
+                            >
+                              {att.name}
+                            </a>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <Textarea
                     placeholder="内部备注"
                     defaultValue={item.adminNote ?? ""}

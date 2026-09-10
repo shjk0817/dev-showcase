@@ -6,7 +6,7 @@ import { randomUUID } from "crypto";
 const UPLOAD_DIR = path.join(process.cwd(), "public/uploads");
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const FILE_TYPES = [
+const ADMIN_FILE_TYPES = [
   ...IMAGE_TYPES,
   "application/zip",
   "application/x-zip-compressed",
@@ -15,28 +15,68 @@ const FILE_TYPES = [
   "video/webm",
 ];
 
-/** 上传文件并返回公开访问路径 */
+const FEEDBACK_MIME_TYPES = [
+  ...IMAGE_TYPES,
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/plain",
+  "text/markdown",
+  "text/csv",
+  "application/zip",
+  "application/x-zip-compressed",
+  "application/octet-stream",
+];
+
+const FEEDBACK_EXT = new Set([
+  ".jpg", ".jpeg", ".png", ".webp", ".gif",
+  ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+  ".txt", ".md", ".csv", ".zip",
+]);
+
+/** 保存上传文件并返回公开路径 */
 export async function saveUpload(
   file: File,
   subdir: string,
-  maxSize: number
-): Promise<{ url: string; size: number }> {
-  if (!FILE_TYPES.includes(file.type)) {
-    throw new Error("不支持的文件类型");
+  maxSize: number,
+  allowedTypes = ADMIN_FILE_TYPES
+): Promise<{ url: string; size: number; mimeType: string }> {
+  if (!isAllowedFile(file, allowedTypes)) {
+    throw new Error(`不支持的文件类型：${file.name}`);
   }
   if (file.size > maxSize) {
     throw new Error(`文件大小不能超过 ${Math.round(maxSize / 1024 / 1024)}MB`);
   }
-  const ext = path.extname(file.name) || ".bin";
+  const ext = path.extname(file.name).toLowerCase() || ".bin";
   const filename = `${randomUUID()}${ext}`;
   const dir = path.join(UPLOAD_DIR, subdir);
   await mkdir(dir, { recursive: true });
   const buffer = Buffer.from(await file.arrayBuffer());
   await writeFile(path.join(dir, filename), buffer);
-  return { url: `/uploads/${subdir}/${filename}`, size: file.size };
+  return {
+    url: `/uploads/${subdir}/${filename}`,
+    size: file.size,
+    mimeType: file.type || "application/octet-stream",
+  };
+}
+
+/** 保存反馈附件 */
+export async function saveFeedbackFile(file: File) {
+  return saveUpload(file, "feedback", 20 * 1024 * 1024, FEEDBACK_MIME_TYPES);
 }
 
 /** 判断是否为图片类型 */
 export function isImageType(type: string): boolean {
   return IMAGE_TYPES.includes(type);
+}
+
+/** 校验文件类型是否允许上传 */
+function isAllowedFile(file: File, allowedTypes: string[]): boolean {
+  if (allowedTypes.includes(file.type)) return true;
+  const ext = path.extname(file.name).toLowerCase();
+  return FEEDBACK_EXT.has(ext);
 }

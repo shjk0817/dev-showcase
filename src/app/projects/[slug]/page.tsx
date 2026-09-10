@@ -77,7 +77,7 @@ export default async function ProjectPage({ params }: Props) {
             <VideoList items={project.videos} />
           </TabsContent>
           <TabsContent value="feedback" className="mt-6">
-            <FeedbackForm projectId={project.id} projectTitle={project.title} />
+            <FeedbackForm projectId={project.id} />
           </TabsContent>
         </Tabs>
       </main>

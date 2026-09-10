@@ -16,7 +16,7 @@ type ProjectCardProps = {
 export function ProjectCard({ title, slug, description, category, coverUrl }: ProjectCardProps) {
   return (
     <Link href={`/projects/${slug}`}>
-      <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden">
+      <Card className="h-full shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden border-0">
         <div className="aspect-video bg-slate-100 relative">
           {coverUrl ? (
             <Image src={coverUrl} alt={title} fill className="object-cover" />

@@ -5,7 +5,10 @@ import { FeedbackManager } from "@/components/feedback-manager";
 /** 反馈管理页 */
 export default async function AdminFeedbackPage() {
   const items = await prisma.feedback.findMany({
-    include: { project: { select: { title: true, slug: true } } },
+    include: {
+      project: { select: { title: true, slug: true } },
+      attachments: true,
+    },
     orderBy: { createdAt: "desc" },
   });
   const serialized = items.map((i) => ({
@@ -13,6 +16,13 @@ export default async function AdminFeedbackPage() {
     createdAt: i.createdAt.toISOString(),
     projectTitle: i.project?.title ?? "未知项目",
     projectSlug: i.project?.slug ?? "",
+    attachments: i.attachments.map((a) => ({
+      id: a.id,
+      name: a.name,
+      fileUrl: a.fileUrl,
+      fileSize: a.fileSize,
+      mimeType: a.mimeType,
+    })),
   }));
   return (
     <div>

@@ -1,4 +1,4 @@
-// 首页：展示已发布的开发成果
+// 首页：简约项目卡片列表
 import { prisma } from "@/lib/db";
 import { SiteHeader } from "@/components/site-header";
 import { ProjectCard } from "@/components/project-card";
@@ -13,26 +13,17 @@ export default async function HomePage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <section className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">JKTAC 开发成果</h1>
-          <p className="text-muted-foreground">
-            欢迎浏览 JKTAC 的开发成果。进入项目详情页可提交 Issue、建议与反馈。
-          </p>
-        </section>
+      <main className="flex-1 container mx-auto px-4 py-10">
         {projects.length === 0 ? (
-          <p className="text-center text-muted-foreground py-16">暂无已发布的项目</p>
+          <p className="text-center text-muted-foreground py-16">暂无项目</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {projects.map((p) => (
               <ProjectCard key={p.id} {...p} />
             ))}
           </div>
         )}
       </main>
-      <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-        JKTAC · 每个项目均可独立提交反馈
-      </footer>
     </>
   );
 }

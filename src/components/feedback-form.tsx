@@ -1,7 +1,7 @@
-// 反馈提交表单（客户端，绑定到具体项目）
+// 反馈提交表单（客户端，支持多附件）
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,20 +15,37 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FEEDBACK_TYPES } from "@/lib/constants";
+import { X } from "lucide-react";
 
 type Props = {
   projectId: string;
-  projectTitle: string;
 };
 
+const ACCEPT =
+  "image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.zip";
+
 /** 针对单个项目的匿名反馈表单 */
-export function FeedbackForm({ projectId, projectTitle }: Props) {
+export function FeedbackForm({ projectId }: Props) {
+  const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [type, setType] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
 
-  /** 提交项目反馈到 API */
+  /** 添加附件 */
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+    setFiles((prev) => [...prev, ...picked].slice(0, 5));
+    e.target.value = "";
+  }
+
+  /** 移除已选附件 */
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  /** 提交项目反馈 */
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!type) {
@@ -38,17 +55,16 @@ export function FeedbackForm({ projectId, projectTitle }: Props) {
     setLoading(true);
     setError("");
     const form = new FormData(e.currentTarget);
-    const body = { ...Object.fromEntries(form.entries()), type, projectId };
+    form.set("projectId", projectId);
+    form.set("type", type);
+    files.forEach((file) => form.append("files", file));
     try {
-      const res = await fetch("/api/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      const res = await fetch("/api/feedback", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "提交失败");
       setDone(true);
       setType("");
+      setFiles([]);
       e.currentTarget.reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : "提交失败");
@@ -61,7 +77,7 @@ export function FeedbackForm({ projectId, projectTitle }: Props) {
     return (
       <Alert>
         <AlertDescription>
-          你对「{projectTitle}」的反馈已提交，感谢你的意见！
+          反馈已提交，感谢你的意见！
           <Button variant="link" className="px-1" onClick={() => setDone(false)}>
             继续提交
           </Button>
@@ -72,9 +88,6 @@ export function FeedbackForm({ projectId, projectTitle }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
-      <p className="text-sm text-muted-foreground">
-        针对项目「{projectTitle}」提交 Issue、建议或使用反馈
-      </p>
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -107,6 +120,32 @@ export function FeedbackForm({ projectId, projectTitle }: Props) {
       <div className="space-y-2">
         <Label htmlFor="contact">联系方式（可选）</Label>
         <Input id="contact" name="contact" placeholder="邮箱或工号" maxLength={200} />
+      </div>
+      <div className="space-y-2">
+        <Label>附件（可选，最多 5 个）</Label>
+        <Input
+          ref={fileRef}
+          type="file"
+          multiple
+          accept={ACCEPT}
+          onChange={handleFileChange}
+          disabled={files.length >= 5}
+        />
+        <p className="text-xs text-muted-foreground">
+          支持图片、PDF、Word、Excel、PPT、TXT、ZIP 等，单个不超过 20MB
+        </p>
+        {files.length > 0 && (
+          <ul className="space-y-1">
+            {files.map((file, i) => (
+              <li key={`${file.name}-${i}`} className="flex items-center justify-between text-sm border rounded px-2 py-1">
+                <span className="truncate">{file.name}</span>
+                <button type="button" onClick={() => removeFile(i)} aria-label="移除">
+                  <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <Button type="submit" disabled={loading}>
         {loading ? "提交中..." : "提交反馈"}
