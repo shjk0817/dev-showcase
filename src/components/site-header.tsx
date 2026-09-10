@@ -9,7 +9,7 @@ export function SiteHeader() {
     <header className="border-b bg-white/80 backdrop-blur sticky top-0 z-50">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="text-xl font-bold text-blue-600">
-          开发成果展示
+          JKTAC
         </Link>
         <nav className="flex items-center gap-2">
           <Link href="/" className={cn(buttonVariants({ variant: "ghost" }))}>

@@ -15,8 +15,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "开发成果展示站",
-  description: "展示开发成果，收集同事反馈与建议",
+  title: "JKTAC",
+  description: "JKTAC 开发成果展示，收集同事反馈与建议",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 /** 根布局，包裹全站 Provider */

@@ -15,9 +15,9 @@ export default async function HomePage() {
       <SiteHeader />
       <main className="flex-1 container mx-auto px-4 py-8">
         <section className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">开发成果展示</h1>
+          <h1 className="text-3xl font-bold mb-2">JKTAC 开发成果</h1>
           <p className="text-muted-foreground">
-            欢迎浏览我的开发成果。如有问题或建议，欢迎
+            欢迎浏览 JKTAC 的开发成果。如有问题或建议，欢迎
             <a href="/feedback" className="text-blue-600 hover:underline mx-1">
               提交反馈
             </a>
@@ -35,7 +35,7 @@ export default async function HomePage() {
         )}
       </main>
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-        开发成果展示站 · 欢迎提出 Issue 与反馈
+        JKTAC · 欢迎提出 Issue 与反馈
       </footer>
     </>
   );

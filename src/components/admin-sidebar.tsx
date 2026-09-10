@@ -18,7 +18,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
   return (
     <aside className="w-56 border-r bg-slate-50 min-h-screen p-4 flex flex-col">
-      <h2 className="text-lg font-bold mb-6 text-slate-800">管理后台</h2>
+      <h2 className="text-lg font-bold mb-6 text-slate-800">JKTAC 管理后台</h2>
       <nav className="flex flex-col gap-1 flex-1">
         {links.map((link) => (
           <Link

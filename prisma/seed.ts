@@ -21,10 +21,10 @@ async function main() {
       category: "效率工具",
       status: "published",
       publishedAt: new Date(),
-      coverUrl: "/uploads/images/sample-cover.svg",
+      coverUrl: "/uploads/images/jktac-demo-cover.png",
       screenshots: {
         create: [
-          { url: "/uploads/images/sample-screenshot.svg", caption: "主界面", sortOrder: 0 },
+          { url: "/uploads/images/sample-screenshot.png", caption: "主界面", sortOrder: 0 },
         ],
       },
       downloads: {
