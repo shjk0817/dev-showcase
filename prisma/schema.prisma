@@ -16,6 +16,7 @@ model Project {
   content     String       @db.Text @default("")
   category    String
   coverUrl    String?
+  githubUrl   String?
   status      String       @default("draft")
   publishedAt DateTime?
   createdAt   DateTime     @default(now())

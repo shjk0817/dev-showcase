@@ -1,6 +1,5 @@
-// 管理端项目编辑表单
 "use client";
-
+// 管理端项目创建与编辑表单
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -14,16 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { PROJECT_STATUS } from "@/lib/constants";
+import { toast } from "sonner";
+import type { GithubImportData } from "@/lib/github";
+import { ProjectGithubImport } from "@/components/project-github-import";
+import { ProjectDeleteSection } from "@/components/project-delete-section";
 
-type Media = {
-  screenshots: { id: string; url: string; caption?: string | null }[];
-  downloads: { id: string; name: string; fileUrl: string; version?: string | null }[];
-  tutorials: { id: string; title: string; content: string }[];
-  videos: { id: string; title: string; url: string; type: string }[];
-};
+const DEFAULT_CATEGORIES = ["工具", "开源项目", "TypeScript", "JavaScript", "Python", "其他"];
 
 type Project = {
   id: string;
@@ -31,295 +26,174 @@ type Project = {
   description: string;
   content: string;
   category: string;
-  coverUrl?: string | null;
+  coverUrl: string | null;
+  githubUrl: string | null;
   status: string;
-} & Media;
+};
 
-/** 项目编辑与媒体管理表单 */
-export function ProjectEditor({ project }: { project?: Project }) {
+type PendingMedia = Pick<GithubImportData, "downloads" | "tutorials">;
+
+type Props = {
+  project?: Project;
+  categories?: string[];
+};
+
+/** 项目编辑主表单 */
+export function ProjectEditor({ project, categories = DEFAULT_CATEGORIES }: Props) {
   const router = useRouter();
-  const [error, setError] = useState("");
-  const [status, setStatus] = useState(project?.status ?? "draft");
+  const [title, setTitle] = useState(project?.title ?? "");
+  const [description, setDescription] = useState(project?.description ?? "");
+  const [content, setContent] = useState(project?.content ?? "");
+  const [category, setCategory] = useState(project?.category ?? categories[0] ?? "工具");
   const [coverUrl, setCoverUrl] = useState(project?.coverUrl ?? "");
+  const [githubUrl, setGithubUrl] = useState(project?.githubUrl ?? "");
+  const [status, setStatus] = useState(project?.status ?? "draft");
+  const [pendingMedia, setPendingMedia] = useState<PendingMedia>({ downloads: [], tutorials: [] });
+  const [saving, setSaving] = useState(false);
 
-  /** 上传文件到服务器 */
-  async function uploadFile(file: File, type: string) {
-    const form = new FormData();
-    form.append("file", file);
-    form.append("type", type);
-    const res = await fetch("/api/admin/upload", { method: "POST", body: form });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "上传失败");
-    return data as { url: string; size: number };
+  /** 应用 GitHub 导入结果到表单 */
+  function applyGithubImport(url: string, data: GithubImportData) {
+    setTitle(data.title);
+    setDescription(data.description);
+    setContent(data.content);
+    setCategory(data.category);
+    setGithubUrl(url);
+    setPendingMedia({ downloads: data.downloads, tutorials: data.tutorials });
   }
 
-  /** 保存项目基本信息 */
-  async function saveProject(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError("");
-    const form = new FormData(e.currentTarget);
-    const body = {
-      id: project?.id,
-      title: form.get("title"),
-      description: form.get("description"),
-      content: form.get("content"),
-      category: form.get("category"),
-      coverUrl: coverUrl || null,
-      status,
-    };
-    const res = await fetch("/api/admin/projects", {
-      method: project ? "PATCH" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error || "保存失败");
+  /** 保存导入的下载与教程 */
+  async function syncPendingMedia(projectId: string) {
+    for (const d of pendingMedia.downloads) {
+      await fetch("/api/admin/media", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          kind: "download",
+          data: { name: d.name, fileUrl: d.fileUrl, version: d.version, fileSize: d.fileSize },
+        }),
+      });
+    }
+    for (const t of pendingMedia.tutorials) {
+      await fetch("/api/admin/media", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          kind: "tutorial",
+          data: { title: t.title, content: t.content },
+        }),
+      });
+    }
+    if (pendingMedia.downloads.length || pendingMedia.tutorials.length) {
+      setPendingMedia({ downloads: [], tutorials: [] });
+    }
+  }
+
+  /** 提交项目保存 */
+  async function handleSave() {
+    if (title.trim().length < 2) {
+      toast.error("标题至少 2 个字符");
       return;
     }
-    router.push(`/admin/projects/${data.id}`);
-    router.refresh();
-  }
-
-  /** 添加媒体资源 */
-  async function addMedia(kind: string, data: Record<string, unknown>) {
-    if (!project?.id) return;
-    await fetch("/api/admin/media", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId: project.id, kind, data }),
-    });
-    router.refresh();
-  }
-
-  /** 删除媒体资源 */
-  async function removeMedia(kind: string, id: string) {
-    await fetch("/api/admin/media", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kind, id }),
-    });
-    router.refresh();
+    setSaving(true);
+    try {
+      const payload = {
+        title: title.trim(),
+        description: description.trim(),
+        content,
+        category,
+        coverUrl: coverUrl || null,
+        githubUrl: githubUrl.trim() || null,
+        status,
+      };
+      const res = await fetch("/api/admin/projects", {
+        method: project ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(project ? { id: project.id, ...payload } : payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "保存失败");
+      await syncPendingMedia(data.id);
+      toast.success("已保存");
+      router.push(`/admin/projects/${data.id}`);
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "保存失败");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
-    <Tabs defaultValue="basic">
-      <TabsList>
-        <TabsTrigger value="basic">基本信息</TabsTrigger>
-        {project && <TabsTrigger value="media">媒体资源</TabsTrigger>}
-      </TabsList>
-      <TabsContent value="basic" className="mt-4">
-        <form onSubmit={saveProject} className="space-y-4 max-w-2xl">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="title">项目名称</Label>
-            <Input id="title" name="title" defaultValue={project?.title} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="category">分类</Label>
-            <Input id="category" name="category" defaultValue={project?.category} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">简介</Label>
-            <Textarea id="description" name="description" defaultValue={project?.description} required rows={3} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="content">详细介绍（Markdown）</Label>
-            <Textarea id="content" name="content" defaultValue={project?.content} rows={10} />
-          </div>
-          <div className="space-y-2">
-            <Label>封面图</Label>
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                try {
-                  const result = await uploadFile(file, "image");
-                  setCoverUrl(result.url);
-                } catch (err) {
-                  setError(err instanceof Error ? err.message : "上传失败");
-                }
-              }}
-            />
-            {coverUrl && <p className="text-sm text-green-600">已上传：{coverUrl}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label>发布状态</Label>
-            <Select value={status} onValueChange={(v) => setStatus(v ?? "draft")}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {PROJECT_STATUS.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button type="submit">{project ? "保存修改" : "创建项目"}</Button>
-        </form>
-      </TabsContent>
-      {project && (
-        <TabsContent value="media" className="mt-4 space-y-8">
-          <MediaSection
-            title="截图"
-            items={project.screenshots}
-            onRemove={(id) => removeMedia("screenshot", id)}
-            uploadLabel="上传截图"
-            onUpload={async (file) => {
-              const r = await uploadFile(file, "image");
-              await addMedia("screenshot", { url: r.url });
-            }}
-          />
-          <MediaSection
-            title="下载文件"
-            items={project.downloads}
-            onRemove={(id) => removeMedia("download", id)}
-            uploadLabel="上传安装包"
-            onUpload={async (file) => {
-              const r = await uploadFile(file, "file");
-              await addMedia("download", { name: file.name, fileUrl: r.url, fileSize: r.size });
-            }}
-          />
-          <TutorialSection
-            items={project.tutorials}
-            onAdd={(data) => addMedia("tutorial", data)}
-            onRemove={(id) => removeMedia("tutorial", id)}
-          />
-          <VideoSection
-            items={project.videos}
-            onAdd={(data) => addMedia("video", data)}
-            onRemove={(id) => removeMedia("video", id)}
-            onUpload={async (file) => {
-              const r = await uploadFile(file, "video");
-              return r.url;
-            }}
-          />
-        </TabsContent>
+    <div className="space-y-6 max-w-2xl">
+      <ProjectGithubImport defaultUrl={githubUrl} onImport={applyGithubImport} />
+      {pendingMedia.downloads.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          待导入：{pendingMedia.downloads.length} 个下载、{pendingMedia.tutorials.length} 篇教程（保存后写入）
+        </p>
       )}
-    </Tabs>
-  );
-}
-
-/** 通用媒体上传区块 */
-function MediaSection({
-  title,
-  items,
-  onRemove,
-  uploadLabel,
-  onUpload,
-}: {
-  title: string;
-  items: { id: string; url?: string; name?: string; fileUrl?: string }[];
-  onRemove: (id: string) => void;
-  uploadLabel: string;
-  onUpload: (file: File) => Promise<void>;
-}) {
-  return (
-    <div>
-      <h3 className="font-medium mb-2">{title}</h3>
-      <Input
-        type="file"
-        className="mb-3 max-w-xs"
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (file) await onUpload(file);
-        }}
-      />
-      <p className="text-xs text-muted-foreground mb-2">{uploadLabel}</p>
-      <ul className="space-y-1">
-        {items.map((item) => (
-          <li key={item.id} className="flex justify-between text-sm border rounded p-2">
-            <span>{item.name || item.url || item.fileUrl}</span>
-            <Button type="button" variant="ghost" size="sm" onClick={() => onRemove(item.id)}>
-              删除
-            </Button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/** 教程添加区块 */
-function TutorialSection({
-  items,
-  onAdd,
-  onRemove,
-}: {
-  items: { id: string; title: string; content: string }[];
-  onAdd: (data: Record<string, string>) => Promise<void>;
-  onRemove: (id: string) => void;
-}) {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  return (
-    <div>
-      <h3 className="font-medium mb-2">使用教程</h3>
-      <div className="space-y-2 max-w-xl mb-3">
-        <Input placeholder="教程标题" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <Textarea placeholder="Markdown 内容" value={content} onChange={(e) => setContent(e.target.value)} rows={4} />
-        <Button type="button" size="sm" onClick={() => { onAdd({ title, content }); setTitle(""); setContent(""); }}>
-          添加教程
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="title">标题</Label>
+          <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        </div>
+        <div>
+          <Label htmlFor="description">简介</Label>
+          <Textarea
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="content">详细介绍（Markdown）</Label>
+          <Textarea
+            id="content"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            rows={12}
+            className="font-mono text-sm"
+          />
+        </div>
+        <div>
+          <Label>分类</Label>
+          <Select value={category} onValueChange={(v) => v && setCategory(v)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="coverUrl">封面 URL</Label>
+          <Input id="coverUrl" value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} />
+        </div>
+        <div>
+          <Label>状态</Label>
+          <Select value={status} onValueChange={(v) => v && setStatus(v)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="draft">草稿</SelectItem>
+              <SelectItem value="published">已发布</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button type="button" onClick={handleSave} disabled={saving}>
+          {saving ? "保存中…" : "保存"}
         </Button>
       </div>
-      <ul className="space-y-1">
-        {items.map((item) => (
-          <li key={item.id} className="flex justify-between text-sm border rounded p-2">
-            <span>{item.title}</span>
-            <Button type="button" variant="ghost" size="sm" onClick={() => onRemove(item.id)}>删除</Button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/** 视频添加区块 */
-function VideoSection({
-  items,
-  onAdd,
-  onRemove,
-  onUpload,
-}: {
-  items: { id: string; title: string; url: string; type: string }[];
-  onAdd: (data: Record<string, string>) => Promise<void>;
-  onRemove: (id: string) => void;
-  onUpload: (file: File) => Promise<string>;
-}) {
-  const [title, setTitle] = useState("");
-  const [url, setUrl] = useState("");
-  return (
-    <div>
-      <h3 className="font-medium mb-2">教程视频</h3>
-      <div className="space-y-2 max-w-xl mb-3">
-        <Input placeholder="视频标题" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <Input placeholder="嵌入链接（B站/YouTube）" value={url} onChange={(e) => setUrl(e.target.value)} />
-        <div className="flex gap-2">
-          <Button type="button" size="sm" onClick={() => { onAdd({ title, url, type: "embed" }); setTitle(""); setUrl(""); }}>
-            添加嵌入视频
-          </Button>
-          <Input type="file" accept="video/*" className="max-w-xs" onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file || !title) return;
-            const videoUrl = await onUpload(file);
-            await onAdd({ title, url: videoUrl, type: "upload" });
-            setTitle("");
-          }} />
-        </div>
-      </div>
-      <ul className="space-y-1">
-        {items.map((item) => (
-          <li key={item.id} className="flex justify-between text-sm border rounded p-2">
-            <span>{item.title} ({item.type})</span>
-            <Button type="button" variant="ghost" size="sm" onClick={() => onRemove(item.id)}>删除</Button>
-          </li>
-        ))}
-      </ul>
+      {project && <ProjectDeleteSection projectId={project.id} />}
     </div>
   );
 }

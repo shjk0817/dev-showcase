@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import slugify from "slugify";
 import { z } from "zod";
+import { verifyAdminPassword } from "@/lib/admin-auth";
 
 const projectSchema = z.object({
   title: z.string().min(2).max(200),
@@ -11,8 +12,14 @@ const projectSchema = z.object({
   content: z.string().max(50000).optional(),
   category: z.string().min(1).max(50),
   coverUrl: z.string().optional().nullable(),
+  githubUrl: z.string().url().optional().nullable(),
   status: z.enum(["draft", "published"]).optional(),
   slug: z.string().optional(),
+});
+
+const deleteSchema = z.object({
+  id: z.string().min(1),
+  password: z.string().min(1),
 });
 
 /** 获取全部项目（含草稿） */
@@ -47,6 +54,7 @@ export async function POST(request: NextRequest) {
       content: data.content ?? "",
       category: data.category,
       coverUrl: data.coverUrl,
+      githubUrl: data.githubUrl ?? null,
       status: data.status ?? "draft",
       publishedAt: data.status === "published" ? new Date() : null,
     },
@@ -77,11 +85,17 @@ export async function PATCH(request: NextRequest) {
   return NextResponse.json(project);
 }
 
-/** 删除项目 */
+/** 删除项目（需管理员密码二次确认） */
 export async function DELETE(request: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "未授权" }, { status: 401 });
-  const { id } = await request.json();
-  await prisma.project.delete({ where: { id } });
+  const parsed = deleteSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "参数无效" }, { status: 400 });
+  }
+  if (!verifyAdminPassword(parsed.data.password)) {
+    return NextResponse.json({ error: "密码错误" }, { status: 403 });
+  }
+  await prisma.project.delete({ where: { id: parsed.data.id } });
   return NextResponse.json({ ok: true });
 }

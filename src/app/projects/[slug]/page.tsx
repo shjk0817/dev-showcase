@@ -70,6 +70,18 @@ export default async function ProjectPage({ params }: Props) {
             <Badge className="mb-3">{project.category}</Badge>
             <h1 className="text-2xl md:text-3xl font-bold mb-2">{project.title}</h1>
             <p className="text-muted-foreground mb-6">{project.description}</p>
+            {project.githubUrl && (
+              <p className="mb-4">
+                <a
+                  href={project.githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline"
+                >
+                  GitHub 仓库 →
+                </a>
+              </p>
+            )}
             <Tabs defaultValue="overview">
               <TabsList className="flex-wrap h-auto bg-muted/50 shadow-sm">
                 <TabsTrigger value="overview">概览</TabsTrigger>

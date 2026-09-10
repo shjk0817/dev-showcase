@@ -18,7 +18,10 @@ export const metadata: Metadata = {
   title: "JKTAC",
   description: "JKTAC 开发成果展示，收集同事反馈与建议",
   icons: {
-    icon: "/favicon.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
     apple: "/favicon.png",
   },
 };
