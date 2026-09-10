@@ -7,6 +7,7 @@ import { revalidateProjectPages } from "@/lib/revalidate-project";
 import { parseJsonBody } from "@/lib/api-utils";
 import { validateDownloadUrl, validateImageUrl, validateVideoUrl } from "@/lib/validate-url";
 import { deleteUploadByUrl } from "@/lib/file-cleanup";
+import { writeAuditLog, getClientIpFromHeaders } from "@/lib/audit-log";
 
 const mediaSchema = z.object({
   projectId: z.string(),
@@ -95,6 +96,13 @@ export async function POST(request: NextRequest) {
       break;
   }
   revalidateProjectPages(project.slug);
+  await writeAuditLog({
+    action: "media.create",
+    target: projectId,
+    detail: `${kind}`,
+    operator: session.user?.name ?? "admin",
+    ip: getClientIpFromHeaders(request.headers),
+  });
   return NextResponse.json(result);
 }
 
@@ -134,5 +142,12 @@ export async function DELETE(request: NextRequest) {
 
   if (fileUrl) await deleteUploadByUrl(fileUrl);
   if (media.project) revalidateProjectPages(media.project.slug);
+  await writeAuditLog({
+    action: "media.delete",
+    target: id,
+    detail: kind,
+    operator: session.user?.name ?? "admin",
+    ip: getClientIpFromHeaders(request.headers),
+  });
   return NextResponse.json({ ok: true });
 }

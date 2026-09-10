@@ -2,6 +2,7 @@
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
+import { compressImage, shouldCompressImage } from "@/lib/image-compress";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public/uploads");
 
@@ -66,16 +67,27 @@ export async function saveUpload(
   if (file.size > maxSize) {
     throw new Error(`文件大小不能超过 ${Math.round(maxSize / 1024 / 1024)}MB`);
   }
-  const ext = path.extname(file.name).toLowerCase() || ".bin";
+
+  let buffer = Buffer.from(await file.arrayBuffer());
+  let ext = path.extname(file.name).toLowerCase() || ".bin";
+  let mimeType = file.type || "application/octet-stream";
+
+  const compressible = subdir === "images" || subdir === "feedback";
+  if (compressible && shouldCompressImage(mimeType, file.name)) {
+    const compressed = await compressImage(buffer, mimeType, file.name);
+    buffer = Buffer.from(compressed.buffer);
+    ext = compressed.ext;
+    mimeType = compressed.mimeType;
+  }
+
   const filename = `${randomUUID()}${ext}`;
   const dir = path.join(UPLOAD_DIR, subdir);
   await mkdir(dir, { recursive: true });
-  const buffer = Buffer.from(await file.arrayBuffer());
   await writeFile(path.join(dir, filename), buffer);
   return {
     url: `/uploads/${subdir}/${filename}`,
-    size: file.size,
-    mimeType: file.type || "application/octet-stream",
+    size: buffer.length,
+    mimeType,
   };
 }
 

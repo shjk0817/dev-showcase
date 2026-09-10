@@ -10,6 +10,7 @@ import { parseJsonBody, prismaErrorResponse } from "@/lib/api-utils";
 import { validateImageUrl } from "@/lib/validate-url";
 import { deleteUploads } from "@/lib/file-cleanup";
 import { collectProjectUploadUrls } from "@/lib/project-files";
+import { writeAuditLog, getClientIpFromHeaders } from "@/lib/audit-log";
 
 const projectSchema = z.object({
   title: z.string().min(2).max(200),
@@ -69,6 +70,13 @@ export async function POST(request: NextRequest) {
       },
     });
     revalidateProjectPages(project.slug);
+    await writeAuditLog({
+      action: "project.create",
+      target: project.title,
+      detail: `slug=${project.slug}`,
+      operator: session.user?.name ?? "admin",
+      ip: getClientIpFromHeaders(request.headers),
+    });
     return NextResponse.json(project);
   } catch (err) {
     const resp = prismaErrorResponse(err);
@@ -113,6 +121,13 @@ export async function PATCH(request: NextRequest) {
     }
     revalidateProjectPages(project.slug);
     if (existing.slug !== project.slug) revalidateProjectPages(existing.slug);
+    await writeAuditLog({
+      action: "project.update",
+      target: project.title,
+      detail: `id=${project.id}`,
+      operator: session.user?.name ?? "admin",
+      ip: getClientIpFromHeaders(request.headers),
+    });
     return NextResponse.json(project);
   } catch (err) {
     const resp = prismaErrorResponse(err);
@@ -138,5 +153,12 @@ export async function DELETE(request: NextRequest) {
   await prisma.project.delete({ where: { id: parsed.data.id } });
   await deleteUploads(urls);
   revalidateProjectPages(existing.slug);
+  await writeAuditLog({
+    action: "project.delete",
+    target: existing.title,
+    detail: `slug=${existing.slug}`,
+    operator: session.user?.name ?? "admin",
+    ip: getClientIpFromHeaders(request.headers),
+  });
   return NextResponse.json({ ok: true });
 }

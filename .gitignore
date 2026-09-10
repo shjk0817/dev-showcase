@@ -4,6 +4,8 @@ node_modules
 *.log
 .DS_Store
 public/uploads/images/*
+backups/
+
 public/uploads/files/*
 public/uploads/feedback/*
 !public/uploads/feedback/.gitkeep

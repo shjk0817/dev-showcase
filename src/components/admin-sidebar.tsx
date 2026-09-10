@@ -12,6 +12,7 @@ const links = [
   { href: "/admin", label: "仪表盘", exact: true },
   { href: "/admin/projects", label: "项目管理", exact: false },
   { href: "/admin/feedback", label: "反馈管理", exact: false },
+  { href: "/admin/audit", label: "操作审计", exact: false },
 ];
 
 /** 判断导航项是否激活 */

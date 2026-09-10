@@ -1,0 +1,2 @@
+# 每日凌晨 3 点自动备份（安装：crontab -e 添加下面一行）
+# 0 3 * * * cd /root/dev-showcase && /usr/bin/node --env-file=.env scripts/backup.mjs >> /var/log/dev-showcase-backup.log 2>&1

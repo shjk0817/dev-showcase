@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { saveFeedbackFile } from "@/lib/upload";
 import { deleteUploads } from "@/lib/file-cleanup";
+import { notifyNewFeedback } from "@/lib/notify";
 
 const MAX_FILES = 5;
 
@@ -73,6 +74,14 @@ export async function POST(request: NextRequest) {
     revalidatePath("/admin");
     revalidatePath("/admin/feedback");
     revalidatePath(`/projects/${project.slug}`);
+    notifyNewFeedback({
+      feedbackId: feedback.id,
+      title,
+      content,
+      type,
+      projectTitle: project.title,
+      contact,
+    }).catch((e) => console.error("[notify]", e));
     return NextResponse.json({ id: feedback.id, message: "反馈已提交，感谢你的意见！" });
   } catch (err) {
     await deleteUploads(savedFiles.map((f) => f.url));

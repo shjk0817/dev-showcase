@@ -61,6 +61,25 @@ npm run build && pm2 restart dev-showcase && nginx -s reload
 npm run smoke
 ```
 
+## 反馈通知
+
+在 `.env` 中配置 SMTP 和/或企微 Webhook，新反馈提交后会自动通知：
+
+- `NOTIFY_EMAIL_TO` + `SMTP_*` — 邮件通知
+- `WECHAT_WEBHOOK_URL` — 企微群机器人
+
+## 定时备份
+
+```bash
+npm run backup
+```
+
+建议添加 cron（参考 `deploy/backup.cron`），每日自动备份数据库与 `public/uploads`。
+
+## 操作审计
+
+管理后台 → **操作审计** 可查看登录、项目、媒体、反馈等操作记录。
+
 ## 主要功能
 
 - 首页项目卡片展示（仅已发布）

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { parseJsonBody, prismaErrorResponse } from "@/lib/api-utils";
 import { deleteUploads } from "@/lib/file-cleanup";
+import { writeAuditLog, getClientIpFromHeaders } from "@/lib/audit-log";
 
 /** 获取全部反馈列表 */
 export async function GET() {
@@ -46,6 +47,13 @@ export async function PATCH(request: NextRequest) {
       where: { id },
       data: { ...(status && { status }), ...(adminNote !== undefined && { adminNote }) },
     });
+    await writeAuditLog({
+      action: "feedback.update",
+      target: item.title,
+      detail: status ? `status=${status}` : "note",
+      operator: session.user?.name ?? "admin",
+      ip: getClientIpFromHeaders(request.headers),
+    });
     return NextResponse.json(item);
   } catch (err) {
     const resp = prismaErrorResponse(err);
@@ -69,5 +77,12 @@ export async function DELETE(request: NextRequest) {
   if (!existing) return NextResponse.json({ error: "反馈不存在" }, { status: 404 });
   await prisma.feedback.delete({ where: { id: parsed.data.id } });
   await deleteUploads(existing.attachments.map((a) => a.fileUrl));
+  await writeAuditLog({
+    action: "feedback.delete",
+    target: existing.title,
+    detail: `id=${parsed.data.id}`,
+    operator: session.user?.name ?? "admin",
+    ip: getClientIpFromHeaders(request.headers),
+  });
   return NextResponse.json({ ok: true });
 }

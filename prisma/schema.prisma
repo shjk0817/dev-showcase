@@ -92,3 +92,16 @@ model FeedbackAttachment {
   mimeType   String
   createdAt  DateTime @default(now())
 }
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  target    String?
+  detail    String?  @db.Text
+  operator  String   @default("admin")
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+}

@@ -3,6 +3,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { verifyPassword } from "@/lib/auth-password";
 import { checkLoginRateLimit } from "@/lib/rate-limit";
+import { writeAuditLog } from "@/lib/audit-log";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
@@ -24,6 +25,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const password = credentials?.password as string;
         if (username !== process.env.ADMIN_USERNAME) return null;
         if (!(await verifyPassword(password))) return null;
+        await writeAuditLog({ action: "auth.login", operator: username, ip });
         return { id: "admin", name: "管理员", email: "admin@local" };
       },
     }),
