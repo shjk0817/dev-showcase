@@ -7,4 +7,5 @@ public/uploads/images/*
 public/uploads/files/*
 public/uploads/videos/*
 !public/uploads/images/sample-*
+!public/uploads/images/jktac-*
 !public/uploads/files/sample.zip
